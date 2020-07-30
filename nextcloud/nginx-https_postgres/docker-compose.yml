@@ -1,0 +1,46 @@
+version: '2'
+
+volumes:
+ nextcloud:
+ db:
+
+services:
+ db:
+   image: postgres:alpine
+   container_name: nextcloud_postgres
+   restart: always
+   ports:
+     - 5432:5432
+   volumes:
+     - /srv/database/nextcloud-postgresql:/var/lib/postgresql/data/pgdata
+   env_file:
+     - /srv/docker-nextcloud/env/postgresql.env
+   environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PG_WORK_MEM: 1G
+      PG_MAINTENANCE_WORK_MEM: 1G
+
+ app:
+   image: nextcloud:fpm
+   container_name: nextcloud_php
+   links:
+     - db
+   volumes:
+     - /srv/docker-nextcloud/nextcloud-www:/var/www/html:rw
+     - /srv/database/nextcloud-database:/srv/nextcloud-database:rw
+   restart: always
+
+ web:
+   image: nginx
+   container_name: nextcloud_nginx
+   ports:
+     - 80:80
+     - 443:443
+   links:
+     - app
+   volumes:
+     - /srv/docker-nextcloud/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+     - /etc/letsencrypt:/etc/letsencrypt:ro
+   volumes_from:
+     - app
+   restart: always
